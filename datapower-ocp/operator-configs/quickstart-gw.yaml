@@ -4,10 +4,11 @@ metadata:
   name: quick-gw
   namespace: cp4i
 spec:
+  version: 10.0.3.0
   license:
     accept: true
     use: nonproduction
-    license: L-RJON-BYDR3Q
+    license: L-RJON-C2XKPU
   replicas: 1
   resources:
     limits:
@@ -15,7 +16,6 @@ spec:
     requests:
       cpu: 1
       memory: 4Gi
-  version: 10.0-cd
   users:
     - name: admin
       accessLevel: privileged

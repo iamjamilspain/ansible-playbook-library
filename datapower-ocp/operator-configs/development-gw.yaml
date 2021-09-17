@@ -4,10 +4,11 @@ metadata:
   name: development-gw
   namespace: cp4i
 spec:
+  version: 10.0.3.0
   license:
     accept: true
     use: nonproduction
-    license: L-RJON-BYDR3Q
+    license: L-RJON-C2XKPU
   replicas: 3
   resources:
     limits:
