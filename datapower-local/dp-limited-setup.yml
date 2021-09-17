@@ -1,0 +1,106 @@
+- name: DataPower Limited Laptop Setup
+  hosts: localhost
+  gather_facts: false
+  vars_prompt:
+    - name: foldername
+      prompt: What is the folder name for the working directory?
+      private: no
+    - name: containername
+      prompt: Please provide a container name?
+      private: no    
+  tasks:
+
+# Ansible Shell Module
+# https://docs.ansible.com/ansible/latest/collections/ansible/builtin/shell_module.html
+
+    - name: This command will change the working directory to somedir/
+      ansible.builtin.shell:
+        cmd: mkdir -p "workspace/{{ foldername }}" && cd "workspace/{{ foldername }}" && mkdir config local certs && chmod 777 config local certs
+      register: foldervar
+
+    - debug:
+        var: foldervar
+
+    - name: List contents of working directory created
+      ansible.builtin.shell:
+        cmd: ls -al "workspace/{{ foldername }}"
+      register: lsoutput
+
+    - debug:
+        var: lsoutput.stdout_lines
+
+    - name: Copy Default AutoStart.cfg into config folder
+      ansible.builtin.shell:
+        cmd: cp auto-startup.cfg "workspace/{{ foldername }}/config"
+      register: cpoutput
+
+    - debug:
+        var: cpoutput
+
+#  Docker Image Module
+#  https://docs.ansible.com/ansible/2.6/modules/docker_image_module.html#docker-image-module
+
+    - name: Pull Image datapower-limited:10.0.3.0 if not exists
+      docker_image:
+        source: pull
+        state: present
+        name: icr.io/integration/datapower/datapower-limited
+        tag: 10.0.3.0
+
+    - name: Pull the Present Working Directory to variable
+      ansible.builtin.shell:
+        cmd: pwd
+      register: currentdir
+
+    - debug:
+        var: currentdir.stdout
+
+
+
+#  Docker Container Module
+#  https://docs.ansible.com/ansible/2.6/modules/docker_container_module.html#docker-container-module
+    - name: Create Container from image
+      docker_container:
+        name: "{{ containername }}"
+        image: icr.io/integration/datapower/datapower-limited:10.0.3.0
+        state: present
+        #restart: yes
+        detach: true
+        debug: true
+        interactive: true
+        memory_reservation: 1024m
+        memory: 4096m
+        volumes:
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/config:/opt/ibm/datapower/drouter/config"
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/local:/opt/ibm/datapower/drouter/local"
+        -  "{{ currentdir.stdout }}/workspace/{{ foldername }}/certs:/opt/ibm/datapower/root/secure/usrcerts"     
+        ports:
+        - "9090:9090"
+        - "5550:5550"
+        - "5554:5554"
+        - "9022:9022"
+        env:
+             DATAPOWER_ACCEPT_LICENSE: "true"
+             DATAPOWER_INTERACTIVE: "true"
+      register: container
+
+    - debug:
+        var: container.stderr_lines
+
+    - name: Prints two lines of messages, but only if there is an environment value set
+      ansible.builtin.debug:
+        msg:
+        - ""
+        - "Your DataPower Container {{ containername }} has been created. You can work with it using the following commands:"
+        - ""
+        - "docker start {{ containername }} "
+        - "docker stop {{ containername }} "
+        - "docker rm {{ containername }} "
+        - ""
+        - "To view the WebUI, browse to https://localhost:9090"
+        - "To view the REST API, browse to https://localhost:5554"
+        - "To view the XML API, browse to https://localhost:5550"
+        - ""
+
+    
+
