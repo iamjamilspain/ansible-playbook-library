@@ -1,0 +1,78 @@
+---
+# ./dp-operator-setup.yml
+
+- name: Deploy DataPower Service Instance
+  hosts: "localhost"
+  tasks:
+  
+    - include_vars: vars_deployment.yml
+
+    - name: Create Namespace
+      k8s:
+        name: "{{ mynamespace }}"
+        api_version: v1
+        kind: Namespace
+        state: present
+
+    - name: List contents of working directory created
+      ansible.builtin.shell:
+        cmd: oc create secret generic admin-credentials --from-literal=password="{{ adminpasswd }}" -n "{{ mynamespace }}"
+      ignore_errors: yes
+      register: lsoutput
+
+    - debug:
+        var: lsoutput.stdout_lines   
+
+    - name: Create Config Map for domain
+      ansible.builtin.shell:
+        cmd: oc create configmap domain-restproxy --from-file=domains/restProxy.cfg  -n "{{ mynamespace }}"
+      ignore_errors: yes
+      register: lsoutput2
+
+    - debug:
+        var: lsoutput2.stdout_lines  
+
+    - name: Create Config Map for domain
+      ansible.builtin.shell:
+        cmd: oc create configmap domain-default --from-file=domains/auto-startup.cfg  -n "{{ mynamespace }}"
+      ignore_errors: yes
+      register: lsoutput3
+
+    - debug:
+        var: lsoutput3.stdout_lines  
+
+    - name: Create DataPower Service Instance
+      k8s:
+        state: present
+        definition:
+          apiVersion: datapower.ibm.com/v1beta3 
+          kind: DataPowerService
+          metadata:
+            name: "{{ myreleasename }}-dp"
+            namespace: "{{ mynamespace }}"
+          spec:
+            version: 10.0.3.0
+            license:
+              accept: true
+              use: nonproduction
+              license: L-RJON-C2XKPU
+            replicas: 1
+            resources:
+              limits:
+                memory: 4Gi
+              requests:
+                cpu: 1
+                memory: 4Gi
+            users:
+            - name: admin
+              passwordSecret: admin-credentials 
+              accessLevel: privileged
+            domains:
+            - name: default
+              dpApp:
+                config:
+                - domain-config
+      register: myservice
+
+    - debug:
+        var: myservice

@@ -1,0 +1,11 @@
+---
+# ./vars_deployment.yml
+
+mynamespace: "cp4i"
+myreleasename: "dpgw"
+
+# Variables for Admin Password Secret
+adminsecret: "admin-credentials"
+adminpasswd: "ibmibm"
+
+# Variables for Domain Config
