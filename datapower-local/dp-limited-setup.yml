@@ -1,3 +1,5 @@
+---
+
 - name: DataPower Limited Laptop Setup
   hosts: localhost
   gather_facts: false
@@ -13,7 +15,7 @@
 # Ansible Shell Module
 # https://docs.ansible.com/ansible/latest/collections/ansible/builtin/shell_module.html
 
-    - name: This command will change the working directory to somedir/
+    - name: This command will generate folder structure "workspace/{{ foldername }}"
       ansible.builtin.shell:
         cmd: mkdir -p "workspace/{{ foldername }}" && cd "workspace/{{ foldername }}" && mkdir config local certs && chmod 777 config local certs
       register: foldervar
@@ -87,7 +89,7 @@
     - debug:
         var: container.stderr_lines
 
-    - name: Prints two lines of messages, but only if there is an environment value set
+    - name: Prints Final Message with Usage Information
       ansible.builtin.debug:
         msg:
         - ""
